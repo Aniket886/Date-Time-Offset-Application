@@ -40,6 +40,9 @@
         }
 
         body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
@@ -116,7 +119,12 @@
             z-index: 10;
             width: 100%;
             max-width: 650px;
-            padding: 60px 16px 40px;
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 72px 16px 28px;
             margin: 0 auto;
             text-align: center;
         }
@@ -134,7 +142,7 @@
         .subtitle {
             font-size: clamp(0.85rem, 3.5vw, 1rem);
             color: #94a3b8;
-            margin-bottom: 28px;
+            margin-bottom: 20px;
             font-weight: 300;
             letter-spacing: 0.02em;
             padding: 0 10px;
@@ -144,7 +152,7 @@
         .cards {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
         .card {
@@ -153,7 +161,7 @@
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
-            padding: 18px 16px;
+            padding: 16px 16px;
             text-align: left;
             transition: transform 0.2s ease, box-shadow 0.3s ease;
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
@@ -299,7 +307,7 @@
         }
 
         .footer {
-            margin-top: 36px;
+            margin-top: 18px;
             font-size: 0.75rem;
             color: #64748b;
             font-weight: 300;
@@ -315,7 +323,8 @@
 
         @media (max-width: 360px) {
             .wrapper {
-                padding: 55px 12px 32px;
+                min-height: auto;
+                padding: 56px 12px 26px;
             }
 
             h1 {
@@ -356,6 +365,7 @@
 
         @media (orientation: landscape) and (max-height: 500px) {
             .wrapper {
+                min-height: auto;
                 padding: 20px 16px;
             }
 
@@ -384,15 +394,15 @@
 
         @media (min-width: 768px) {
             .wrapper {
-                padding: 80px 24px 60px;
+                padding: 72px 24px 28px;
             }
 
             .card {
-                padding: 24px;
+                padding: 18px 20px;
             }
 
             .cards {
-                gap: 16px;
+                gap: 12px;
             }
 
             .live-indicator {
