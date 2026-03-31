@@ -223,6 +223,10 @@ Use this variant when you need native Android packaging rather than a browser-ba
 
 This repository does not currently declare a license file. Add one before distributing or reusing it beyond personal or internal work.
 
-## Profile
+## Author
 
-GitHub: https://github.com/Aniket886
+Built and maintained by **Aniket Tegginamath**.
+
+- Role: Cybersecurity Trainer, Hacker, Cybercrime Investigator, Researcher, Web Developer
+- Location: India
+- GitHub: [Aniket886](https://github.com/Aniket886)
