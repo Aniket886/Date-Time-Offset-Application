@@ -11,8 +11,14 @@
   const tzFetch = document.getElementById("tz-fetch");
   const tzStatus = document.getElementById("tz-status");
   const tzResult = document.getElementById("tz-result");
+  const netStatus = document.getElementById("net-status");
 
   if (!tzSelect || !tzInput || !tzList || !tzFetch || !tzStatus || !tzResult) return;
+
+  const syncNetworkBadge = () => {
+    if (!netStatus) return;
+    netStatus.classList.toggle("offline", !navigator.onLine);
+  };
 
   const setStatus = (text) => {
     tzStatus.textContent = text;
@@ -31,6 +37,10 @@
 
       tzSelect.innerHTML = "";
       tzList.innerHTML = "";
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Select a timezone...";
+      tzSelect.appendChild(placeholder);
       for (const name of tzs.slice(0, 2000)) {
         const option = document.createElement("option");
         option.value = String(name);
@@ -44,13 +54,13 @@
       setStatus("Pick a timezone (or type your own) and click “Get Time”.");
 
       if (!tzInput.value) tzInput.value = "UTC";
-      if (tzSelect.options.length) {
+      if (tzSelect.options.length > 1) {
         const hasUTC = Array.from(tzSelect.options).some((o) => o.value === "UTC");
-        tzSelect.value = hasUTC ? "UTC" : tzSelect.options[0].value;
+        tzSelect.value = hasUTC ? "UTC" : tzSelect.options[1].value;
         tzInput.value = tzSelect.value;
       }
     } catch (e) {
-      setStatus("Couldn’t load timezones list (you can still type one like UTC or Asia/Kolkata).");
+      setStatus("Couldn't load timezones list (you can still type one like UTC or Asia/Kolkata).");
       if (!tzInput.value) tzInput.value = "UTC";
       tzSelect.innerHTML = "";
       const fallback = document.createElement("option");
@@ -139,7 +149,7 @@
   tzFetch.addEventListener("click", fetchTime);
   tzSelect.addEventListener("change", () => {
     tzInput.value = String(tzSelect.value || "").trim();
-    fetchTime();
+    if (tzInput.value) fetchTime();
   });
   tzInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -148,5 +158,8 @@
     }
   });
 
+  window.addEventListener("online", syncNetworkBadge);
+  window.addEventListener("offline", syncNetworkBadge);
+  syncNetworkBadge();
   loadTimezones();
 })();
