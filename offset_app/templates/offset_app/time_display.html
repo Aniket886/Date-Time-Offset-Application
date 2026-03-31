@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Date-Time Offset</title>
+    <link rel="stylesheet" href="{% static 'chatbot/chatbot.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ── Base ──────────────────────────────────────── */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0b0c10;
+            color: #ffffff;
+            min-height: 100vh;
+            justify-content: center;
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* ── Cosmic Liquid Background Elements ──────────── */
+        .ambient-blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.5;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+
+        .ambient-blob.primary {
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(135deg, #4f46e5, #ec4899);
+            top: -100px;
+            left: -100px;
+        }
+
+        .ambient-blob.secondary {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
+            bottom: -150px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+        
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 30px) scale(1.1); }
+            100% { transform: translate(-30px, -50px) scale(0.9); }
+        }
+
+        /* ── Centered wrapper ──────────────────────────── */
+        .wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 650px;
+            padding: 40px;
+            text-align: center;
+            margin: 24px auto 64px auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(to right, #ffffff, #a5b4fc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1.05rem;
+            color: #94a3b8;
+            margin-bottom: 48px;
+            font-weight: 300;
+        }
+
+        /* ── Cards (Liquid Glassmorphism) ──────────────── */
+        .cards {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 28px 32px;
+            text-align: left;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
+        }
+
+        /* Highlight for the current-time card */
+        .card.current {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            border-top: 1px solid rgba(139, 92, 246, 0.6);
+            border-left: 1px solid rgba(139, 92, 246, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.2);
+        }
+
+        .card.current:hover {
+            background: rgba(139, 92, 246, 0.15);
+            box-shadow: 0 12px 40px 0 rgba(139, 92, 246, 0.3);
+        }
+
+        .card-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+
+        .card.current .card-label {
+            color: #c4b5fd;
+        }
+
+        .card-time {
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: #ffffff;
+            letter-spacing: 0.02em;
+        }
+
+        .card.current .card-time {
+            color: #ede9fe;
+            text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+        }
+
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .control-input {
+            flex: 1;
+            min-width: 180px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.06);
+            color: #ffffff;
+            border-radius: 14px;
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        select.control-input {
+            color: #0b0c10;
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        select.control-input option {
+            color: #0b0c10;
+            background: #ffffff;
+        }
+
+        .control-input::placeholder {
+            color: rgba(255, 255, 255, 0.65);
+        }
+
+        .control-btn {
+            border: 0;
+            background: linear-gradient(135deg, rgba(79, 140, 255, 0.95), rgba(139, 92, 246, 0.95));
+            color: #fff;
+            border-radius: 14px;
+            padding: 10px 14px;
+            font-weight: 650;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .hint {
+            margin-top: 10px;
+            color: #94a3b8;
+            font-size: 0.88rem;
+            font-weight: 300;
+            line-height: 1.35;
+        }
+
+        /* ── Footer ─────────────────────────────────────── */
+        .footer {
+            margin-top: 50px;
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 300;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-blob primary"></div>
+    <div class="ambient-blob secondary"></div>
+
+    <div class="wrapper" data-time-url="{% url 'time_api' %}" data-timezones-url="{% url 'timezones_api' %}" data-server-epoch-ms="{{ server_epoch_ms }}">
+
+        <h1>Date-Time Offset Application</h1>
+        <p class="subtitle">Server-computed time offsets using Python's datetime and Django.</p>
+
+        <div class="cards">
+            <!-- Custom Offset Controls -->
+            <div class="card" id="card-controls">
+                <div class="card-label">Custom Offset</div>
+                <form method="get" action="" class="controls-row">
+                    <input class="control-input" type="number" step="0.25" min="-48" max="48" name="hours" value="{{ offset_hours_display }}" placeholder="Offset hours (e.g. 4, 5.5, -2)">
+                    <button class="control-btn" type="submit">Apply</button>
+                </form>
+                <div class="hint">Tip: try decimals like <code>5.5</code>. Default is 4 hours.</div>
+            </div>
+
+            <!-- Four Hours Before -->
+            <div class="card" id="card-before">
+                <div class="card-label">
+                    {% if offset_hours_display == "4" %}Four Hours Before{% else %}{{ offset_hours_display }} Hours Before{% endif %}
+                </div>
+                <div class="card-time">{{ four_hours_before|date:"F j, Y, P" }}</div>
+            </div>
+
+            <!-- Current Date & Time -->
+            <div class="card current" id="card-current">
+                <div class="card-label">Current Date &amp; Time</div>
+                <div class="card-time">{{ current_time|date:"F j, Y, P" }}</div>
+            </div>
+
+            <!-- Four Hours Ahead -->
+            <div class="card" id="card-ahead">
+                <div class="card-label">
+                    {% if offset_hours_display == "4" %}Four Hours Ahead{% else %}{{ offset_hours_display }} Hours Ahead{% endif %}
+                </div>
+                <div class="card-time">{{ four_hours_ahead|date:"F j, Y, P" }}</div>
+            </div>
+
+            <!-- World Time (Free API) -->
+            <div class="card" id="card-worldtime">
+                <div class="card-label">World Time (Free API)</div>
+                <div class="controls-row">
+                    <select class="control-input" id="tz-select" aria-label="Select timezone"></select>
+                    <button class="control-btn" id="tz-fetch" type="button">Get Time</button>
+                </div>
+                <div class="hint" style="margin-top: 8px;">Or type a custom timezone:</div>
+                <div class="controls-row" style="margin-top: 10px;">
+                    <input class="control-input" id="tz-input" list="tz-list" placeholder="Type a timezone (e.g. Asia/Kolkata, Europe/London)">
+                    <datalist id="tz-list"></datalist>
+                </div>
+                <div class="hint" id="tz-status">Loading timezones…</div>
+                <div class="card-time" id="tz-result" style="margin-top: 10px; font-size: 1.1rem;"></div>
+            </div>
+        </div>
+
+        <p class="footer">Built with Django &middot; Lab Exercise</p>
+        <p class="footer" style="margin-top: 10px;">Developed by Aniket</p>
+
+    </div>
+
+    <div id="chatbot-root" data-chatbot-api-url="{% url 'chatbot:api' %}"></div>
+    <script src="{% static 'chatbot/chatbot.js' %}"></script>
+    <script src="{% static 'offset_app/world_time.js' %}"></script>
+    <script src="{% static 'offset_app/live_clock.js' %}"></script>
+</body>
+</html>
