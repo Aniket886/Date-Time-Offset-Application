@@ -3,6 +3,10 @@
   "appName": "Time Offset",
   "webDir": "www",
   "bundledWebRuntime": false,
+  "server": {
+    "url": "http://192.168.X.X:8000",
+    "cleartext": true
+  },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 2000,
@@ -15,6 +19,7 @@
     }
   },
   "android": {
+    "allowMixedContent": true,
     "buildOptions": {
       "keystorePath": "",
       "keystorePassword": "",
