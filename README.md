@@ -20,6 +20,10 @@ This project started as a date-time offset calculator and has grown into a clean
 - An optional chatbot layer with local, OpenAI, or Groq-backed modes
 - Separate PWA and Capacitor-based APK variants for broader delivery
 
+### Preview
+
+![ChronoShift interface preview](./SS1.png)
+
 The current repository is best understood as one core experience delivered in three formats.
 
 ## Why It Stands Out
