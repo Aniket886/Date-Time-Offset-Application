@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#0b0c10">
+    <meta name="background-color" content="#0b0c10">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Time Offset">
+    <meta name="description" content="Beautiful Date-Time Offset calculator with offline support">
+    <title>Date-Time Offset PWA</title>
+    
+        <link rel="manifest" href="{% static 'pwa/manifest.json' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'pwa/favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'pwa/favicon-16x16.png' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pwa/favicon-32x32.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'pwa/icon-180x180.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'pwa/icon-192x192.png' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'pwa/icon-192x192.png' %}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{% static 'pwa/icon-512x512.png' %}">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0b0c10;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Install prompt */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(255, 255, 255, 0.95);
+            color: #0b0c10;
+            padding: 16px 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.4s ease;
+        }
+        .install-prompt.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .install-prompt button {
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .install-prompt .dismiss {
+            background: transparent;
+            color: #666;
+            padding: 4px;
+        }
+
+        /* Ambient blobs */
+        .ambient-blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.5;
+            animation: float 20s infinite ease-in-out alternate;
+            pointer-events: none;
+        }
+        .ambient-blob.primary {
+            width: 400px; height: 400px;
+            background: linear-gradient(135deg, #4f46e5, #ec4899);
+            top: -100px; left: -100px;
+        }
+        .ambient-blob.secondary {
+            width: 500px; height: 500px;
+            background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
+            bottom: -150px; right: -100px;
+            animation-delay: -5s;
+        }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(50px, 30px) scale(1.1); }
+            100% { transform: translate(-30px, -50px) scale(0.9); }
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 650px;
+            padding: 40px 20px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { font-size: 1rem; color: #94a3b8; margin-bottom: 32px; font-weight: 300; }
+
+        .cards { display: flex; flex-direction: column; gap: 16px; }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: left;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+        }
+        .card:hover { transform: translateY(-4px); }
+        .card.current {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+        }
+
+        .card-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #a5b4fc;
+            margin-bottom: 8px;
+        }
+        .card-time {
+            font-size: clamp(1.2rem, 4vw, 1.6rem);
+            font-weight: 500;
+            color: #fff;
+            line-height: 1.4;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .control-input {
+            flex: 1;
+            min-width: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+        }
+        .control-input:focus { border-color: rgba(79, 70, 229, 0.6); }
+        .control-btn {
+            border: 0;
+            background: linear-gradient(135deg, rgba(79, 140, 255, 0.95), rgba(139, 92, 246, 0.95));
+            color: #fff;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .control-btn:active { transform: scale(0.98); }
+
+        .hint {
+            margin-top: 8px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        .hint code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        .pwa-status {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            z-index: 100;
+        }
+        .pwa-status.online { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .pwa-status.offline { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+        @media (max-width: 480px) {
+            .wrapper { padding: 20px 16px; }
+            .card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="pwa-status" id="pwa-status">? Offline Ready</div>
+    
+    <div class="ambient-blob primary"></div>
+    <div class="ambient-blob secondary"></div>
+
+    <div class="install-prompt" id="install-prompt">
+        <span>?? Install Time Offset app?</span>
+        <button onclick="installPWA()">Install</button>
+        <button class="dismiss" onclick="dismissInstall()">?</button>
+    </div>
+
+    <div class="wrapper">
+        <h1>Date-Time Offset</h1>
+        <p class="subtitle">Server time with dynamic offsets. Works offline!</p>
+
+        <div class="cards">
+            <div class="card" id="card-controls">
+                <div class="card-label">Custom Offset</div>
+                <form method="get" class="controls-row">
+                    <input class="control-input" type="number" step="0.25" min="-48" max="48" name="hours" value="{{ offset_hours_display }}" placeholder="Offset hours">
+                    <button class="control-btn" type="submit">Apply</button>
+                </form>
+                <div class="hint">Tip: try decimals like <code>5.5</code>. Default is 4 hours.</div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">{{ offset_hours_display }} Hours Before</div>
+                <div class="card-time">{{ four_hours_before|date:"F j, Y, P" }}</div>
+            </div>
+
+            <div class="card current">
+                <div class="card-label">Current Date & Time</div>
+                <div class="card-time" id="live-time">{{ current_time|date:"F j, Y, P" }}</div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">{{ offset_hours_display }} Hours Ahead</div>
+                <div class="card-time">{{ four_hours_ahead|date:"F j, Y, P" }}</div>
+            </div>
+
+            <div class="card" id="card-worldtime">
+                <div class="card-label">World Time (Online)</div>
+                <div class="controls-row">
+                    <select class="control-input" id="tz-select">
+                        <option value="">Select timezone...</option>
+                    </select>
+                    <button class="control-btn" id="tz-fetch" type="button">Get Time</button>
+                </div>
+                <div class="hint" id="tz-status">Connect to see world time options.</div>
+                <div class="card-time" id="tz-result"></div>
+            </div>
+        </div>
+
+        <p class="footer">PWA Version · Built with Django</p>
+    </div>
+
+    <script>
+        let installPrompt = null;
+        const statusEl = document.getElementById("pwa-status");
+
+        window.addEventListener("beforeinstallprompt", (e) => {
+            e.preventDefault();
+            installPrompt = e;
+            document.getElementById("install-prompt").classList.add("visible");
+        });
+
+        async function installPWA() {
+            if (!installPrompt) return;
+            installPrompt.prompt();
+            const result = await installPrompt.userChoice;
+            if (result.outcome === "accepted") {
+                document.getElementById("install-prompt").classList.remove("visible");
+            }
+            installPrompt = null;
+        }
+
+        function dismissInstall() {
+            document.getElementById("install-prompt").classList.remove("visible");
+        }
+
+        window.addEventListener("appinstalled", () => {
+            document.getElementById("install-prompt").classList.remove("visible");
+            installPrompt = null;
+        });
+
+        function updateStatus() {
+            if (navigator.onLine) {
+                statusEl.textContent = "? Online";
+                statusEl.className = "pwa-status online";
+            } else {
+                statusEl.textContent = "?? Offline Mode";
+                statusEl.className = "pwa-status offline";
+            }
+        }
+        window.addEventListener("online", updateStatus);
+        window.addEventListener("offline", updateStatus);
+        updateStatus();
+
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("{% static 'pwa/sw.js' %}").catch(console.error);
+        }
+
+        const serverEpochMs = {{ server_epoch_ms }};
+        const tzSelect = document.getElementById("tz-select");
+        const tzFetch = document.getElementById("tz-fetch");
+        const tzStatus = document.getElementById("tz-status");
+        const tzResult = document.getElementById("tz-result");
+
+        async function loadTimezones() {
+            if (!navigator.onLine) {
+                tzStatus.textContent = "Offline - World time unavailable";
+                return;
+            }
+            try {
+                const res = await fetch("{% url 'timezones_api' %}");
+                const data = await res.json();
+                if (data.timezones) {
+                    tzSelect.innerHTML = `<option value="">Select timezone...</option>` +
+                        data.timezones.map(tz => `<option value="${tz}">${tz}</option>`).join("");
+                    tzStatus.textContent = `${data.timezones.length} timezones loaded`;
+                }
+            } catch (e) {
+                tzStatus.textContent = "Failed to load timezones";
+            }
+        }
+
+        tzFetch.addEventListener("click", async () => {
+            const tz = tzSelect.value || document.getElementById("tz-input")?.value;
+            if (!tz) return;
+            tzStatus.textContent = "Loading...";
+            try {
+                const res = await fetch(`{% url 'time_api' %}?timezone=${encodeURIComponent(tz)}`);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                tzResult.textContent = `${data.timezone}: ${data.date} ${data.time}`;
+                tzStatus.textContent = "Timezone loaded";
+            } catch (e) {
+                tzStatus.textContent = "Failed to load time";
+            }
+        });
+
+        loadTimezones();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#0b0c10">
+    <meta name="background-color" content="#0b0c10">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="ChronoShift Application">
+    <title>Time Offset</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/x-icon" href="img/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/icon-180x180.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html {
+            height: 100%;
+            overflow-x: hidden;
+            overscroll-behavior: none;
+        }
+        
+        html, body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0b0c10;
+            color: #fff;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            overflow-x: hidden;
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        .ambient-blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.5;
+            animation: float 20s infinite ease-in-out alternate;
+            pointer-events: none;
+        }
+        .ambient-blob.primary {
+            width: 300px; height: 300px;
+            background: linear-gradient(135deg, #4f46e5, #ec4899);
+            top: -50px; left: -50px;
+        }
+        .ambient-blob.secondary {
+            width: 350px; height: 350px;
+            background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
+            bottom: -100px; right: -50px;
+            animation-delay: -5s;
+        }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, 20px) scale(1.05); }
+            100% { transform: translate(-20px, -30px) scale(0.95); }
+        }
+
+        /* Live indicator - iOS/Android safe area aware */
+        .live-indicator {
+            position: fixed;
+            top: max(16px, env(safe-area-inset-top));
+            right: max(16px, env(safe-area-inset-right));
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(34, 197, 94, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #4ade80;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: blink 1.5s ease-in-out infinite;
+            box-shadow: 0 0 6px #22c55e;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.85); }
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 650px;
+            padding: 60px 16px 40px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: clamp(1.5rem, 6vw, 2.2rem);
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            padding: 0 10px;
+        }
+        .subtitle { 
+            font-size: clamp(0.85rem, 3.5vw, 1rem); 
+            color: #94a3b8; 
+            margin-bottom: 28px; 
+            font-weight: 300;
+            letter-spacing: 0.02em;
+            padding: 0 10px;
+            line-height: 1.5;
+        }
+
+        .cards { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 18px 16px;
+            text-align: left;
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            touch-action: manipulation;
+        }
+        .card:active { transform: scale(0.98); }
+        .card.current {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 4px 24px rgba(139, 92, 246, 0.15);
+        }
+        .card.online {
+            background: rgba(34, 197, 94, 0.08);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .card-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #a5b4fc;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .card-time {
+            font-size: clamp(1rem, 4vw, 1.3rem);
+            font-weight: 500;
+            color: #fff;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            align-items: stretch;
+            flex-wrap: nowrap;
+        }
+        
+        .control-input, .control-select {
+            flex: 1;
+            min-width: 0;
+            min-height: 48px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 12px 14px;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 34px;
+        }
+        
+        /* iOS select styling */
+        .control-select {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-select option,
+        .control-select optgroup {
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 16px;
+        }
+        
+        .control-input:focus, .control-select:focus { 
+            border-color: rgba(79, 70, 229, 0.6); 
+        }
+        
+        .control-btn {
+            border: 0;
+            background: linear-gradient(135deg, rgba(79, 140, 255, 0.95), rgba(139, 92, 246, 0.95));
+            color: #fff;
+            border-radius: 12px;
+            padding: 12px 18px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            white-space: nowrap;
+            min-height: 48px;
+            min-width: 80px;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+            user-select: none;
+        }
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .control-btn:active { 
+            transform: scale(0.96); 
+            opacity: 0.9;
+        }
+
+        .hint {
+            margin-top: 10px;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+        .hint code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+
+        .status-badge {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+        .status-badge.offline {
+            background: #ef4444;
+        }
+
+        .footer {
+            margin-top: 36px;
+            font-size: 0.75rem;
+            color: #64748b;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+            padding: 0 10px;
+        }
+        .footer-divider {
+            display: inline-block;
+            margin: 0 6px;
+            color: #475569;
+        }
+
+        /* Small phones */
+        @media (max-width: 360px) {
+            .wrapper { padding: 55px 12px 32px; }
+            h1 { font-size: 1.4rem; }
+            .subtitle { font-size: 0.8rem; }
+            .card { padding: 16px 14px; }
+            .card-time { font-size: 0.95rem; }
+            .control-btn { padding: 12px 14px; font-size: 0.9rem; }
+            .live-indicator { 
+                padding: 5px 10px; 
+                font-size: 0.65rem;
+                top: max(12px, env(safe-area-inset-top));
+                right: max(12px, env(safe-area-inset-right));
+            }
+        }
+
+        /* iPhone X+ / Android notch */
+        @supports (padding: max(0px)) {
+            .wrapper {
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+            }
+        }
+
+        /* Landscape mode */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .wrapper { 
+                padding: 20px 16px; 
+            }
+            h1 { font-size: 1.4rem; margin-bottom: 4px; }
+            .subtitle { margin-bottom: 16px; font-size: 0.8rem; }
+            .cards { gap: 10px; }
+            .card { padding: 14px 16px; }
+            .live-indicator {
+                top: max(10px, env(safe-area-inset-top));
+            }
+        }
+
+        /* Tablet */
+        @media (min-width: 768px) {
+            .wrapper { padding: 80px 24px 60px; }
+            .card { padding: 24px; }
+            .cards { gap: 16px; }
+            .live-indicator {
+                padding: 8px 14px;
+                font-size: 0.75rem;
+            }
+            .live-dot {
+                width: 8px;
+                height: 8px;
+            }
+        }
+
+        /* Reduce motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            .ambient-blob { animation: none; }
+            .live-dot { animation: none; }
+            .card { transition: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="live-indicator">
+        <div class="live-dot"></div>
+        Live
+    </div>
+
+    <div class="ambient-blob primary"></div>
+    <div class="ambient-blob secondary"></div>
+
+    <div class="wrapper">
+        <h1>ChronoShift</h1>
+        <p class="subtitle">Real-time offset calculations with global timezone support</p>
+
+        <div class="cards">
+            <!-- Custom Offset -->
+            <div class="card" id="card-controls">
+                <div class="card-label">Custom Offset</div>
+                <form id="offset-form" class="controls-row">
+                    <input id="hours-input" class="control-input" type="number" step="0.25" min="-48" max="48" value="4" placeholder="Offset hours" inputmode="decimal">
+                    <button class="control-btn" type="submit">Apply</button>
+                </form>
+                <div class="hint">Tip: try decimals like <code>5.5</code> or negatives like <code>-4</code>.</div>
+            </div>
+
+            <!-- Offset Times -->
+            <div class="card">
+                <div class="card-label" id="before-label">4 Hours Before</div>
+                <div class="card-time" id="time-before">--</div>
+            </div>
+
+            <div class="card current">
+                <div class="card-label">Current Date & Time</div>
+                <div class="card-time" id="time-current">--</div>
+            </div>
+
+            <div class="card">
+                <div class="card-label" id="ahead-label">4 Hours Ahead</div>
+                <div class="card-time" id="time-ahead">--</div>
+            </div>
+
+            <!-- World Time / Country Dropdown -->
+            <div class="card online" id="card-worldtime">
+                <div class="card-label">
+                    <span class="status-badge" id="net-status"></span>
+                    World Time
+                </div>
+                <div class="controls-row">
+                    <select id="country-select" class="control-select">
+                        <option value="">Select a country...</option>
+                        <option value="UTC">UTC (Coordinated Universal Time)</option>
+                        
+                        <!-- Asia -->
+                        <optgroup label="Asia">
+                            <option value="Asia/Kolkata">India (IST)</option>
+                            <option value="Asia/Dubai">UAE (Dubai)</option>
+                            <option value="Asia/Singapore">Singapore</option>
+                            <option value="Asia/Tokyo">Japan (Tokyo)</option>
+                            <option value="Asia/Shanghai">China (Shanghai)</option>
+                            <option value="Asia/Hong_Kong">Hong Kong</option>
+                            <option value="Asia/Seoul">South Korea (Seoul)</option>
+                            <option value="Asia/Bangkok">Thailand (Bangkok)</option>
+                            <option value="Asia/Jakarta">Indonesia (Jakarta)</option>
+                            <option value="Asia/Manila">Philippines (Manila)</option>
+                            <option value="Asia/Karachi">Pakistan (Karachi)</option>
+                            <option value="Asia/Dhaka">Bangladesh (Dhaka)</option>
+                            <option value="Asia/Tehran">Iran (Tehran)</option>
+                            <option value="Asia/Baghdad">Iraq (Baghdad)</option>
+                            <option value="Asia/Riyadh">Saudi Arabia (Riyadh)</option>
+                            <option value="Asia/Jerusalem">Israel (Jerusalem)</option>
+                        </optgroup>
+
+                        <!-- Europe -->
+                        <optgroup label="Europe">
+                            <option value="Europe/London">United Kingdom (London)</option>
+                            <option value="Europe/Paris">France (Paris)</option>
+                            <option value="Europe/Berlin">Germany (Berlin)>
+                            <option value="Europe/Rome">Italy (Rome)</option>
+                            <option value="Europe/Madrid">Spain (Madrid)</option>
+                            <option value="Europe/Amsterdam">Netherlands (Amsterdam)</option>
+                            <option value="Europe/Brussels">Belgium (Brussels)</option>
+                            <option value="Europe/Zurich">Switzerland (Zurich)</option>
+                            <option value="Europe/Stockholm">Sweden (Stockholm)</option>
+                            <option value="Europe/Oslo">Norway (Oslo)</option>
+                            <option value="Europe/Copenhagen">Denmark (Copenhagen)</option>
+                            <option value="Europe/Helsinki">Finland (Helsinki)</option>
+                            <option value="Europe/Moscow">Russia (Moscow)</option>
+                            <option value="Europe/Istanbul">Turkey (Istanbul)</option>
+                            <option value="Europe/Warsaw">Poland (Warsaw)</option>
+                            <option value="Europe/Vienna">Austria (Vienna)</option>
+                            <option value="Europe/Prague">Czech Republic (Prague)</option>
+                            <option value="Europe/Athens">Greece (Athens)</option>
+                        </optgroup>
+
+                        <!-- Americas -->
+                        <optgroup label="Americas">
+                            <option value="America/New_York">United States (New York)</option>
+                            <option value="America/Los_Angeles">United States (Los Angeles)</option>
+                            <option value="America/Chicago">United States (Chicago)</option>
+                            <option value="America/Denver">United States (Denver)</option>
+                            <option value="America/Phoenix">United States (Phoenix)</option>
+                            <option value="America/Anchorage">United States (Anchorage)</option>
+                            <option value="America/Toronto">Canada (Toronto)</option>
+                            <option value="America/Vancouver">Canada (Vancouver)</option>
+                            <option value="America/Mexico_City">Mexico (Mexico City)</option>
+                            <option value="America/Sao_Paulo">Brazil (Sao Paulo)</option>
+                            <option value="America/Buenos_Aires">Argentina (Buenos Aires)</option>
+                            <option value="America/Santiago">Chile (Santiago)</option>
+                            <option value="America/Bogota">Colombia (Bogota)</option>
+                            <option value="America/Lima">Peru (Lima)</option>
+                            <option value="America/Caracas">Venezuela (Caracas)</option>
+                        </optgroup>
+
+                        <!-- Oceania -->
+                        <optgroup label="Oceania">
+                            <option value="Australia/Sydney">Australia (Sydney)</option>
+                            <option value="Australia/Melbourne">Australia (Melbourne)</option>
+                            <option value="Australia/Brisbane">Australia (Brisbane)</option>
+                            <option value="Australia/Perth">Australia (Perth)</option>
+                            <option value="Australia/Adelaide">Australia (Adelaide)</option>
+                            <option value="Pacific/Auckland">New Zealand (Auckland)</option>
+                            <option value="Pacific/Fiji">Fiji</option>
+                            <option value="Pacific/Guam">Guam</option>
+                            <option value="Pacific/Honolulu">United States (Honolulu)</option>
+                        </optgroup>
+
+                        <!-- Africa -->
+                        <optgroup label="Africa">
+                            <option value="Africa/Cairo">Egypt (Cairo)</option>
+                            <option value="Africa/Johannesburg">South Africa (Johannesburg)</option>
+                            <option value="Africa/Lagos">Nigeria (Lagos)</option>
+                            <option value="Africa/Nairobi">Kenya (Nairobi)</option>
+                            <option value="Africa/Casablanca">Morocco (Casablanca)</option>
+                            <option value="Africa/Tunis">Tunisia (Tunis)</option>
+                            <option value="Africa/Addis_Ababa">Ethiopia (Addis Ababa)</option>
+                            <option value="Africa/Accra">Ghana (Accra)</option>
+                        </optgroup>
+                    </select>
+                    <button class="control-btn" id="get-time-btn" type="button">Get Time</button>
+                </div>
+                <div class="hint" id="world-hint">Select a country to see its current time. Works offline using device timezone data.</div>
+                <div class="card-time" id="world-time-result" style="margin-top: 12px;"></div>
+            </div>
+        </div>
+
+        <p class="footer">
+            ChronoShift Application
+            <span class="footer-divider">|</span>
+            Version 1.0
+        </p>
+    </div>
+
+    <script>
+        let currentOffset = 4;
+
+        function formatDate(date, timezone = null) {
+            const options = {
+                weekday: 'short', year: 'numeric', month: 'short',
+                day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit',
+                timeZone: timezone || undefined
+            };
+            return date.toLocaleString('en-US', options);
+        }
+
+        function getTimeInTimezone(timezone) {
+            const now = new Date();
+            return formatDate(now, timezone);
+        }
+
+        function updateTimes() {
+            const now = new Date();
+            const offsetMs = currentOffset * 60 * 60 * 1000;
+            
+            const before = new Date(now.getTime() - offsetMs);
+            const ahead = new Date(now.getTime() + offsetMs);
+
+            document.getElementById('time-current').textContent = formatDate(now);
+            document.getElementById('time-before').textContent = formatDate(before);
+            document.getElementById('time-ahead').textContent = formatDate(ahead);
+            
+            document.getElementById('before-label').textContent = `${currentOffset} Hours Before`;
+            document.getElementById('ahead-label').textContent = `${currentOffset} Hours Ahead`;
+        }
+
+        document.getElementById('offset-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const val = parseFloat(document.getElementById('hours-input').value);
+            if (!isNaN(val)) {
+                currentOffset = Math.max(-48, Math.min(48, val));
+                updateTimes();
+            }
+        });
+
+        // World Time / Country Dropdown
+        const countrySelect = document.getElementById('country-select');
+        const getTimeBtn = document.getElementById('get-time-btn');
+        const worldTimeResult = document.getElementById('world-time-result');
+        const worldHint = document.getElementById('world-hint');
+        const netStatus = document.getElementById('net-status');
+
+        function updateNetworkStatus() {
+            const isOnline = navigator.onLine;
+            netStatus.classList.toggle('offline', !isOnline);
+        }
+
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+        updateNetworkStatus();
+
+        function showWorldTime() {
+            const timezone = countrySelect.value;
+            if (!timezone) {
+                worldHint.textContent = 'Please select a country first.';
+                worldTimeResult.textContent = '';
+                return;
+            }
+
+            try {
+                const timeString = getTimeInTimezone(timezone);
+                const timezoneName = timezone.split('/').pop().replace('_', ' ');
+                worldTimeResult.innerHTML = `<strong>${timezoneName}:</strong> ${timeString}`;
+                worldHint.textContent = `Showing current time for ${timezone}`;
+            } catch (err) {
+                worldHint.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        getTimeBtn.addEventListener('click', showWorldTime);
+        countrySelect.addEventListener('change', showWorldTime);
+
+        updateTimes();
+        setInterval(updateTimes, 1000);
+        
+        // Prevent zoom on iOS input focus
+        document.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
