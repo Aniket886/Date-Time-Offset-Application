@@ -88,6 +88,10 @@ def chat_api(request):
     if not history:
         history = [{"role": "assistant", "content": GREETING}]
 
+    # Guard against duplicated last-user entries coming from stale browser history.
+    if history and history[-1]["role"] == "user" and history[-1]["content"] == user_text:
+        history = history[:-1]
+
     system_message = initial_messages()[0]
     context_history = history[-(MAX_CONTEXT_TURNS * 2) :]
     messages = [system_message, *context_history]
